@@ -82,22 +82,32 @@ import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 
+/**
+ * MQ 客户端
+ */
 public class MQClientInstance {
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
     private final Logger log = ClientLogger.getLog();
+    //配置信息
     private final ClientConfig clientConfig;
     private final int instanceIndex;
+    //客户端 Id
     private final String clientId;
+    //启动时间
     private final long bootTimestamp = System.currentTimeMillis();
     private final ConcurrentMap<String/* group */, MQProducerInner> producerTable = new ConcurrentHashMap<String, MQProducerInner>();
     private final ConcurrentMap<String/* group */, MQConsumerInner> consumerTable = new ConcurrentHashMap<String, MQConsumerInner>();
     private final ConcurrentMap<String/* group */, MQAdminExtInner> adminExtTable = new ConcurrentHashMap<String, MQAdminExtInner>();
+    //netty 客户端相关的配置
     private final NettyClientConfig nettyClientConfig;
+    //客户端 API 实现
     private final MQClientAPIImpl mQClientAPIImpl;
     private final MQAdminImpl mQAdminImpl;
+    //主题路由信息
     private final ConcurrentMap<String/* Topic */, TopicRouteData> topicRouteTable = new ConcurrentHashMap<String, TopicRouteData>();
     private final Lock lockNamesrv = new ReentrantLock();
     private final Lock lockHeartbeat = new ReentrantLock();
+    //broker 信息
     private final ConcurrentMap<String/* Broker Name */, HashMap<Long/* brokerId */, String/* address */>> brokerAddrTable =
         new ConcurrentHashMap<String, HashMap<Long, String>>();
     private final ConcurrentMap<String/* Broker Name */, HashMap<String/* address */, Integer>> brokerVersionTable =
@@ -122,6 +132,13 @@ public class MQClientInstance {
         this(clientConfig, instanceIndex, clientId, null);
     }
 
+    /**
+     * 客户端实例
+     * @param clientConfig
+     * @param instanceIndex
+     * @param clientId
+     * @param rpcHook
+     */
     public MQClientInstance(ClientConfig clientConfig, int instanceIndex, String clientId, RPCHook rpcHook) {
         this.clientConfig = clientConfig;
         this.instanceIndex = instanceIndex;
@@ -231,12 +248,22 @@ public class MQClientInstance {
                         this.mQClientAPIImpl.fetchNameServerAddr();
                     }
                     // Start request-response channel
+                    //启动 netty 客户端
                     this.mQClientAPIImpl.start();
                     // Start various schedule tasks
+                    /**
+                     * 启动定时任务：
+                     * 获取 NameServer 信息
+                     * 从 NameServer 更新主题的路由信息
+                     * 与 broker 通信：清理失联的 broker；向 broker 发送心跳信息
+                     * 持久化偏移量
+                     * 调整消费者的线程池参数
+                     */
                     this.startScheduledTask();
-                    // Start pull service
+                    // Start pull service 启动消息拉取服务
                     this.pullMessageService.start();
                     // Start rebalance service
+                    // 启动再平衡服务
                     this.rebalanceService.start();
                     // Start push service
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
@@ -255,6 +282,14 @@ public class MQClientInstance {
         }
     }
 
+    /**
+     * 启动定时任务：
+     * 获取 NameServer 信息
+     * 从 NameServer 更新主题的路由信息
+     * 与 broker 通信：清理失联的 broker；向 broker 发送心跳信息
+     * 持久化偏移量
+     * 调整消费者的线程池参数
+     */
     private void startScheduledTask() {
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {

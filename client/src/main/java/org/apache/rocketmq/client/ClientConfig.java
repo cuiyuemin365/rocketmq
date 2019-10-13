@@ -23,22 +23,29 @@ import org.apache.rocketmq.remoting.netty.TlsSystemConfig;
 
 /**
  * Client Common configuration
+ * 客户端配置
  */
 public class ClientConfig {
     public static final String SEND_MESSAGE_WITH_VIP_CHANNEL_PROPERTY = "com.rocketmq.sendMessageWithVIPChannel";
+    //nameserver 地址
     private String namesrvAddr = System.getProperty(MixAll.NAMESRV_ADDR_PROPERTY, System.getenv(MixAll.NAMESRV_ADDR_ENV));
+    //本地 IP 地址
     private String clientIP = RemotingUtil.getLocalAddress();
+    //本实例名称
     private String instanceName = System.getProperty("rocketmq.client.name", "DEFAULT");
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
     /**
+     * 默认每 30 秒拉取 nameserver 信息
      * Pulling topic information interval from the named server
      */
     private int pollNameServerInterval = 1000 * 30;
     /**
+     * 默认每 30 秒向 broker 发送心跳信息
      * Heartbeat interval in microseconds with message broker
      */
     private int heartbeatBrokerInterval = 1000 * 30;
     /**
+     * 默认每 5 秒持久化偏移量
      * Offset persistent interval for consumer
      */
     private int persistConsumerOffsetInterval = 1000 * 5;

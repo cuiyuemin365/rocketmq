@@ -152,6 +152,9 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.slf4j.Logger;
 
+/**
+ * 封装所有客户端 API
+ */
 public class MQClientAPIImpl {
 
     private final static Logger log = ClientLogger.getLog();
