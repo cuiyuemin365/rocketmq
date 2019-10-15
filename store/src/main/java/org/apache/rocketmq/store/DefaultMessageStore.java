@@ -214,6 +214,7 @@ public class DefaultMessageStore implements MessageStore {
             boolean lastExitOK = !this.isTempFileExist();
             log.info("last shutdown {}", lastExitOK ? "normally" : "abnormally");
 
+            //加载延迟队列，rocketmq 定时消息相关
             if (null != scheduleMessageService) {
                 result = result && this.scheduleMessageService.load();
             }
@@ -259,6 +260,9 @@ public class DefaultMessageStore implements MessageStore {
         lockFile.getChannel().write(ByteBuffer.wrap("lock".getBytes()));
         lockFile.getChannel().force(true);
 
+        ////broker 启动 reputMessageService 线程，初始化setReputFromOffset参数
+        //            //指明从哪个物理偏移量开始转发消息给 consumequeue 和 indexfile。
+        //
         this.flushConsumeQueueService.start();
         this.commitLog.start();
         this.storeStatsService.start();
@@ -1417,6 +1421,9 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     public void putMessagePositionInfo(DispatchRequest dispatchRequest) {
+        //根据消息主题与队列 ID，获取对应的 consume queue 文件，其逻辑比较简单，
+//        因为一个消息主题对应一个消息消费队列目录，然后主题下每一个消息队列对应一个文件夹，
+//        然后取出文件夹最后的 consume queue 文件即可
         ConsumeQueue cq = this.findConsumeQueue(dispatchRequest.getTopic(), dispatchRequest.getQueueId());
         cq.putMessagePositionInfoWrapper(dispatchRequest);
     }
@@ -1457,6 +1464,9 @@ public class DefaultMessageStore implements MessageStore {
         }, 6, TimeUnit.SECONDS);
     }
 
+    /**
+     * 构建消息队列
+     */
     class CommitLogDispatcherBuildConsumeQueue implements CommitLogDispatcher {
 
         @Override
@@ -1753,6 +1763,10 @@ public class DefaultMessageStore implements MessageStore {
         }
     }
 
+    /**
+     * 准实时转发 commitlog 文件更新事件
+     * 响应的任务处理器根据转发的消息及时更新 consumequeue、indexfile 文件。
+     */
     class ReputMessageService extends ServiceThread {
 
         private volatile long reputFromOffset = 0;
@@ -1797,19 +1811,21 @@ public class DefaultMessageStore implements MessageStore {
                     && this.reputFromOffset >= DefaultMessageStore.this.getConfirmOffset()) {
                     break;
                 }
-
+                //获取指定位置的消息
                 SelectMappedBufferResult result = DefaultMessageStore.this.commitLog.getData(reputFromOffset);
                 if (result != null) {
                     try {
                         this.reputFromOffset = result.getStartOffset();
 
                         for (int readSize = 0; readSize < result.getSize() && doNext; ) {
+                            //构建消息分发请求对象
                             DispatchRequest dispatchRequest =
                                 DefaultMessageStore.this.commitLog.checkMessageAndReturnSize(result.getByteBuffer(), false, false);
                             int size = dispatchRequest.getMsgSize();
 
                             if (dispatchRequest.isSuccess()) {
                                 if (size > 0) {
+                                    //发布事件
                                     DefaultMessageStore.this.doDispatch(dispatchRequest);
 
                                     if (BrokerRole.SLAVE != DefaultMessageStore.this.getMessageStoreConfig().getBrokerRole()
@@ -1864,6 +1880,8 @@ public class DefaultMessageStore implements MessageStore {
 
             while (!this.isStopped()) {
                 try {
+                    //每执行一次任务推送休息 1 毫秒就继续尝试推送消息到消息消费队列和索引文件，消息
+                    //消费转发的核心实现在 doReput 方法中实现。
                     Thread.sleep(1);
                     this.doReput();
                 } catch (Exception e) {

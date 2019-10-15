@@ -109,8 +109,11 @@ public class IndexFile {
     public boolean putKey(final String key, final long phyOffset, final long storeTimestamp) {
         //如果没有达到容量，往里放
         if (this.indexHeader.getIndexCount() < this.indexNum) {
+            //计算 key的 hash 值
             int keyHash = indexKeyHashMethod(key);
+            //计算 对应的槽的位置
             int slotPos = keyHash % this.hashSlotNum;
+            //计算槽的物理位置
             int absSlotPos = IndexHeader.INDEX_HEADER_SIZE + slotPos * hashSlotSize;
 
             FileLock fileLock = null;
@@ -119,11 +122,12 @@ public class IndexFile {
 
                 // fileLock = this.fileChannel.lock(absSlotPos, hashSlotSize,
                 // false);
+                // 获取当前槽的值
                 int slotValue = this.mappedByteBuffer.getInt(absSlotPos);
                 if (slotValue <= invalidIndex || slotValue > this.indexHeader.getIndexCount()) {
                     slotValue = invalidIndex;
                 }
-
+                //时间差
                 long timeDiff = storeTimestamp - this.indexHeader.getBeginTimestamp();
 
                 timeDiff = timeDiff / 1000;
@@ -135,18 +139,18 @@ public class IndexFile {
                 } else if (timeDiff < 0) {
                     timeDiff = 0;
                 }
-
+                // 当前索引信息的位置
                 int absIndexPos =
                     IndexHeader.INDEX_HEADER_SIZE + this.hashSlotNum * hashSlotSize
                         + this.indexHeader.getIndexCount() * indexSize;
-
+                //记录索引信息 hash 值、物理位置、时间差、前一个索引的位置
                 this.mappedByteBuffer.putInt(absIndexPos, keyHash);
                 this.mappedByteBuffer.putLong(absIndexPos + 4, phyOffset);
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8, (int) timeDiff);
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8 + 4, slotValue);
-
+                //修改当前槽的值：最新一条消息对应的索引的位置
                 this.mappedByteBuffer.putInt(absSlotPos, this.indexHeader.getIndexCount());
-
+                //修改索引头的信息
                 if (this.indexHeader.getIndexCount() <= 1) {
                     this.indexHeader.setBeginPhyOffset(phyOffset);
                     this.indexHeader.setBeginTimestamp(storeTimestamp);
@@ -204,11 +208,23 @@ public class IndexFile {
         return result;
     }
 
+    /**
+     * 根据索引 key 查找消息的实现方法
+     * @param phyOffsets 查找到的消息物理偏移量
+     * @param key 索引的 key 值
+     * @param maxNum 本次查找的最大消息条数
+     * @param begin 开始时间戳
+     * @param end 结束时间戳
+     * @param lock
+     */
     public void selectPhyOffset(final List<Long> phyOffsets, final String key, final int maxNum,
         final long begin, final long end, boolean lock) {
         if (this.mappedFile.hold()) {
+            //计算 key的 hash 值
             int keyHash = indexKeyHashMethod(key);
+            //计算 对应的槽的位置
             int slotPos = keyHash % this.hashSlotNum;
+            // 计算槽的物理位置
             int absSlotPos = IndexHeader.INDEX_HEADER_SIZE + slotPos * hashSlotSize;
 
             FileLock fileLock = null;
@@ -228,6 +244,7 @@ public class IndexFile {
                     || this.indexHeader.getIndexCount() <= 1) {
                 } else {
                     for (int nextIndexToRead = slotValue; ; ) {
+                        //当找到的消息数量到达 maxnum，返回。
                         if (phyOffsets.size() >= maxNum) {
                             break;
                         }
@@ -237,9 +254,11 @@ public class IndexFile {
                                 + nextIndexToRead * indexSize;
 
                         int keyHashRead = this.mappedByteBuffer.getInt(absIndexPos);
+                        //找到的偏移量
                         long phyOffsetRead = this.mappedByteBuffer.getLong(absIndexPos + 4);
-
+                        //时间差
                         long timeDiff = (long) this.mappedByteBuffer.getInt(absIndexPos + 4 + 8);
+                        //获取上一个索引的值
                         int prevIndexRead = this.mappedByteBuffer.getInt(absIndexPos + 4 + 8 + 4);
 
                         if (timeDiff < 0) {
@@ -250,7 +269,7 @@ public class IndexFile {
 
                         long timeRead = this.indexHeader.getBeginTimestamp() + timeDiff;
                         boolean timeMatched = (timeRead >= begin) && (timeRead <= end);
-
+                        //hash 值和时间范围符合要求，返回相应的数据。
                         if (keyHash == keyHashRead && timeMatched) {
                             phyOffsets.add(phyOffsetRead);
                         }
