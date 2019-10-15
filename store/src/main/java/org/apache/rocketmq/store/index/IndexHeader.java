@@ -20,13 +20,38 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 索引文件头信息
+ */
 public class IndexHeader {
+
+    /**
+     * 头信息大小
+     */
     public static final int INDEX_HEADER_SIZE = 40;
+    /**
+     * 第一条消息的存储时间
+     */
     private static int beginTimestampIndex = 0;
+    /**
+     * 最后一条消息的存储时间
+     */
     private static int endTimestampIndex = 8;
+    /**
+     * 第一条消息的物理偏移量
+     */
     private static int beginPhyoffsetIndex = 16;
+    /**
+     * 最后一条消息的物理偏移量 在 commitlog 的物理位置偏移量
+     */
     private static int endPhyoffsetIndex = 24;
+    /**
+     * hash 槽的数量
+     */
     private static int hashSlotcountIndex = 32;
+    /**
+     * 索引数量
+     */
     private static int indexCountIndex = 36;
     private final ByteBuffer byteBuffer;
     private AtomicLong beginTimestamp = new AtomicLong(0);

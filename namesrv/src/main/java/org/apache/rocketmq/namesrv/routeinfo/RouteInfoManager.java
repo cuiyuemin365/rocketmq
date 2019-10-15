@@ -45,14 +45,23 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 其他角色主动向 nameserver 上报状态
+ */
 public class RouteInfoManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    //存储所有 topic 的属性信息
+    //队列的长度等于这个topic 数据存储的 master borker的个数。
     private final HashMap<String/* topic */, List<QueueData>> topicQueueTable;
+    //brokerName 为索引，相同名称的 broker 可能存在多台机器，一个 master 和多个 slave。
     private final HashMap<String/* brokerName */, BrokerData> brokerAddrTable;
+    //存储集群中 cluster 信息，一个 cluster 对应一个由 brokername 组成的集合。
     private final HashMap<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
+    //存储每台 broker 机器的实时信息，
     private final HashMap<String/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
+    //储存broker 的 filter server
     private final HashMap<String/* brokerAddr */, List<String>/* Filter Server */> filterServerTable;
 
     public RouteInfoManager() {

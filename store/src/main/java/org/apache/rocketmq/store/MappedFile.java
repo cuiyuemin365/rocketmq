@@ -64,6 +64,9 @@ public class MappedFile extends ReferenceResource {
     private File file;
     private MappedByteBuffer mappedByteBuffer;
     private volatile long storeTimestamp = 0;
+    /**
+     * 第一个文件文件名称是 0000000000000.
+     */
     private boolean firstCreateInQueue = false;
 
     public MappedFile() {

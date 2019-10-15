@@ -39,6 +39,15 @@ public class IndexFile {
     private final MappedByteBuffer mappedByteBuffer;
     private final IndexHeader indexHeader;
 
+    /**
+     *
+     * @param fileName 索引文件对应的文件名称
+     * @param hashSlotNum 索引文件 hash 槽的数量
+     * @param indexNum 索引文件的容量；索引数量上限
+     * @param endPhyOffset 最后一条的物理位置
+     * @param endTimestamp 最后一条的存储时间戳
+     * @throws IOException
+     */
     public IndexFile(final String fileName, final int hashSlotNum, final int indexNum,
         final long endPhyOffset, final long endTimestamp) throws IOException {
         int fileTotalSize =
@@ -89,7 +98,16 @@ public class IndexFile {
         return this.mappedFile.destroy(intervalForcibly);
     }
 
+    /**
+     * 将消息key、消息物理偏移量、消息存储时间
+     * 放入索引文件
+     * @param key
+     * @param phyOffset
+     * @param storeTimestamp
+     * @return
+     */
     public boolean putKey(final String key, final long phyOffset, final long storeTimestamp) {
+        //如果没有达到容量，往里放
         if (this.indexHeader.getIndexCount() < this.indexNum) {
             int keyHash = indexKeyHashMethod(key);
             int slotPos = keyHash % this.hashSlotNum;

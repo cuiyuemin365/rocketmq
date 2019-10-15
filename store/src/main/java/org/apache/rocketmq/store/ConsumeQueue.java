@@ -151,8 +151,15 @@ public class ConsumeQueue {
         }
     }
 
+    /**
+     * 根据时间戳获取消息偏移量
+     * @param timestamp
+     * @return
+     */
     public long getOffsetInQueueByTime(final long timestamp) {
+        //获取对应的文件
         MappedFile mappedFile = this.mappedFileQueue.getMappedFileByTime(timestamp);
+        //根据二分查找法找到对应的偏移量
         if (mappedFile != null) {
             long offset = 0;
             int low = minLogicOffset > mappedFile.getFileFromOffset() ? (int) (minLogicOffset - mappedFile.getFileFromOffset()) : 0;

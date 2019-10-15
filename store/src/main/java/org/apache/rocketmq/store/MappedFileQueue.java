@@ -29,6 +29,11 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 对应 ${rocketmq_home}/store/commitlog目录
+ * CopyOnWriteArrayList<MappedFile> mappedFiles
+ * 对应目录下的文件；
+ */
 public class MappedFileQueue {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final Logger LOG_ERROR = LoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
@@ -74,6 +79,11 @@ public class MappedFileQueue {
         }
     }
 
+    /**
+     * 根据文件的最后修改时间获取相应的文件
+     * @param timestamp
+     * @return
+     */
     public MappedFile getMappedFileByTime(final long timestamp) {
         Object[] mfs = this.copyMappedFiles(0);
 

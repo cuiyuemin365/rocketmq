@@ -68,10 +68,14 @@ public class NamesrvController {
         this.configuration.setStorePathFromConfig(this.namesrvConfig, "configStorePath");
     }
 
+    /**
+     * 初始化
+     * @return
+     */
     public boolean initialize() {
-
+        //加载配置
         this.kvConfigManager.load();
-
+        //启动服务端
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
 
         this.remotingExecutor =
@@ -79,6 +83,7 @@ public class NamesrvController {
 
         this.registerProcessor();
 
+        //如果没能及时收到 broker 的心跳，剔除 broker。
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -87,6 +92,7 @@ public class NamesrvController {
             }
         }, 5, 10, TimeUnit.SECONDS);
 
+        //定时打印配置表
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
