@@ -41,11 +41,20 @@ public interface MQPushConsumer extends MQConsumer {
     @Deprecated
     void registerMessageListener(MessageListener messageListener);
 
+    /**
+     * 注册并发消息时间监听器
+     * @param messageListener
+     */
     void registerMessageListener(final MessageListenerConcurrently messageListener);
 
+    /**
+     * 注册顺序消费事件监听器
+     * @param messageListener
+     */
     void registerMessageListener(final MessageListenerOrderly messageListener);
 
     /**
+     * 基于主题订阅。消息过滤表达式。
      * Subscribe some topic
      *
      * @param subExpression subscription expression.it only support or operation such as "tag1 || tag2 || tag3" <br> if
@@ -55,6 +64,7 @@ public interface MQPushConsumer extends MQConsumer {
     void subscribe(final String topic, final String subExpression) throws MQClientException;
 
     /**
+     * 基于主题订阅，消息过滤方式使用类模式
      * Subscribe some topic
      *
      * @param fullClassName full class name,must extend org.apache.rocketmq.common.filter. MessageFilter

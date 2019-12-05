@@ -37,11 +37,14 @@ public interface MQConsumer extends MQAdmin {
 
     /**
      * If consuming failure,message will be send back to the broker,and delay consuming some time
+     * 发送消息 ack？？？todo
      */
     void sendMessageBack(final MessageExt msg, final int delayLevel, final String brokerName)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
 
     /**
+     *
+     * 获取消费者对主题 topic 分配了哪些消息队列
      * Fetch message queues from consumer cache according to the topic
      *
      * @param topic message topic
