@@ -54,7 +54,9 @@ public class HAConnection {
     }
 
     public void start() {
+        //从slave读数据的服务
         this.readSocketService.start();
+        //向slave写数据的服务
         this.writeSocketService.start();
     }
 
@@ -122,7 +124,7 @@ public class HAConnection {
             writeSocketService.makeStop();
 
             haService.removeConnection(HAConnection.this);
-
+            //连接次数累加
             HAConnection.this.haService.getConnectionCount().decrementAndGet();
 
             SelectionKey sk = this.socketChannel.keyFor(this.selector);
@@ -155,13 +157,17 @@ public class HAConnection {
 
             while (this.byteBufferRead.hasRemaining()) {
                 try {
+                    // byteBufferRead : write mode
                     int readSize = this.socketChannel.read(this.byteBufferRead);
                     if (readSize > 0) {
                         readSizeZeroTimes = 0;
+                        //更新最后拉去时间
                         this.lastReadTimestamp = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now();
                         if ((this.byteBufferRead.position() - this.processPostion) >= 8) {
                             int pos = this.byteBufferRead.position() - (this.byteBufferRead.position() % 8);
+                            //readOffset为读到的偏移量，一个偏移量的长度是8byte
                             long readOffset = this.byteBufferRead.getLong(pos - 8);
+                            //processPostion为当前的处理位置
                             this.processPostion = pos;
 
                             HAConnection.this.slaveAckOffset = readOffset;
@@ -190,6 +196,9 @@ public class HAConnection {
         }
     }
 
+    /**
+     * 写服务
+     */
     class WriteSocketService extends ServiceThread {
         private final Selector selector;
         private final SocketChannel socketChannel;
@@ -353,6 +362,7 @@ public class HAConnection {
             // Write Body
             if (!this.byteBufferHeader.hasRemaining()) {
                 while (this.selectMappedBufferResult.getByteBuffer().hasRemaining()) {
+                    //将selectMappedBufferResult中的数据写入到socketChannel
                     int writeSize = this.socketChannel.write(this.selectMappedBufferResult.getByteBuffer());
                     if (writeSize > 0) {
                         writeSizeZeroTimes = 0;
