@@ -89,7 +89,10 @@ public class MQClientInstance {
     private final int instanceIndex;
     private final String clientId;
     private final long bootTimestamp = System.currentTimeMillis();
+    //内部管理：
+    // 生产者
     private final ConcurrentMap<String/* group */, MQProducerInner> producerTable = new ConcurrentHashMap<String, MQProducerInner>();
+    // 消费者
     private final ConcurrentMap<String/* group */, MQConsumerInner> consumerTable = new ConcurrentHashMap<String, MQConsumerInner>();
     private final ConcurrentMap<String/* group */, MQAdminExtInner> adminExtTable = new ConcurrentHashMap<String, MQAdminExtInner>();
     private final NettyClientConfig nettyClientConfig;
@@ -255,6 +258,15 @@ public class MQClientInstance {
         }
     }
 
+    /**
+     * 启动调度任务：
+     * 1.每 2 分钟获取 name server 地址
+     * 2.定时更新主题路由信息
+     * 3.清空离线的 broker 信息
+     * 4.发送心跳给 所有 broker
+     * 5.消费者-----持久化所有的消费者偏移量
+     * 6.消费者-----调整消费者线程池
+     */
     private void startScheduledTask() {
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {

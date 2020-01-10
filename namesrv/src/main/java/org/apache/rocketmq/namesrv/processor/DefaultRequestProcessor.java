@@ -79,11 +79,11 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
 
 
         switch (request.getCode()) {
-            case RequestCode.PUT_KV_CONFIG:
+            case RequestCode.PUT_KV_CONFIG://修改 KV
                 return this.putKVConfig(ctx, request);
-            case RequestCode.GET_KV_CONFIG:
+            case RequestCode.GET_KV_CONFIG://获取 KV
                 return this.getKVConfig(ctx, request);
-            case RequestCode.DELETE_KV_CONFIG:
+            case RequestCode.DELETE_KV_CONFIG://删除 kv
                 return this.deleteKVConfig(ctx, request);
             case RequestCode.QUERY_DATA_VERSION:
                 return queryBrokerTopicConfig(ctx, request);

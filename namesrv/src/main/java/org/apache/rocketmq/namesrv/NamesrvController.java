@@ -73,17 +73,23 @@ public class NamesrvController {
         this.configuration.setStorePathFromConfig(this.namesrvConfig, "configStorePath");
     }
 
+    /**
+     * 初始化
+     * @return
+     */
     public boolean initialize() {
-
+        //加载 kv 配置
         this.kvConfigManager.load();
-
+        //实例化网络 server
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
-
+        //实例化执行者服务
         this.remotingExecutor =
             Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
 
+        //注册请求处理器
         this.registerProcessor();
 
+        //调度任务：每 10 秒执行一次，扫描不活跃的 broker 节点
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -92,6 +98,7 @@ public class NamesrvController {
             }
         }, 5, 10, TimeUnit.SECONDS);
 
+        //调度任务：每 10 分钟执行一次，打印 kv 配置信息
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -141,6 +148,9 @@ public class NamesrvController {
         return true;
     }
 
+    /**
+     * 注册请求处理器
+     */
     private void registerProcessor() {
         if (namesrvConfig.isClusterTest()) {
 
@@ -152,6 +162,10 @@ public class NamesrvController {
         }
     }
 
+    /**
+     * 启动
+     * @throws Exception
+     */
     public void start() throws Exception {
         this.remotingServer.start();
 

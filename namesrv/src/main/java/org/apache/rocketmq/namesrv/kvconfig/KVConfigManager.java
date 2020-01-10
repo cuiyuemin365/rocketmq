@@ -28,6 +28,10 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.common.protocol.body.KVTable;
 import org.apache.rocketmq.namesrv.NamesrvController;
+
+/**
+ * KV配置管理器
+ */
 public class KVConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
@@ -41,6 +45,9 @@ public class KVConfigManager {
         this.namesrvController = namesrvController;
     }
 
+    /**
+     * 加载，初始化
+     */
     public void load() {
         String content = null;
         try {
@@ -58,6 +65,12 @@ public class KVConfigManager {
         }
     }
 
+    /**
+     * 设置 KV
+     * @param namespace
+     * @param key
+     * @param value
+     */
     public void putKVConfig(final String namespace, final String key, final String value) {
         try {
             this.lock.writeLock().lockInterruptibly();
@@ -87,6 +100,9 @@ public class KVConfigManager {
         this.persist();
     }
 
+    /**
+     * 持久化
+     */
     public void persist() {
         try {
             this.lock.readLock().lockInterruptibly();
@@ -169,6 +185,9 @@ public class KVConfigManager {
         return null;
     }
 
+    /**
+     * 打印
+     */
     public void printAllPeriodically() {
         try {
             this.lock.readLock().lockInterruptibly();
